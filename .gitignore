@@ -1,0 +1,10 @@
+node_modules
+.next
+dist
+.vercel
+.env
+.output
+.env.local
+.pnpm-debug.log
+TODO
+.env*.local
