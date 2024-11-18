@@ -1,3 +1,15 @@
+export const metadata = {
+  title: "Reverse engineering a C Binary using Frida and Ghidra",
+  description:
+    "These are my notes of how to inject scripts into C binaries using Frida.",
+  openGraph: {
+    title: "Reverse engineering a C Binary using Frida and Ghidra",
+    description:
+      "These are my notes of how to inject scripts into C binaries using Frida.",
+    images: [{ url: "/og/ghidra.webp" }],
+  },
+};
+
 These are my notes of how to inject scripts into C binaries using Frida.
 
 ## Context
@@ -189,4 +201,5 @@ for (let i = 1000; i < 2000; i++) {
 This takes in the function from the address and bruteforces it 1000 times.
 
 Similarly, a lot of functions are provided by Frida to dynamically inject scripts in C binaries.
-***
+
+---
