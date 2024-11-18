@@ -9,7 +9,7 @@ import { LI as li } from "app/(post)/components/li";
 import { HR as hr } from "app/(post)/components/hr";
 import { Code as code } from "app/(post)/components/code";
 import { Tweet } from "app/(post)/components/tweet";
-// import { Image } from "app/(post)/components/image";
+import { Image } from "app/(post)/components/image";
 import { Figure } from "app/(post)/components/figure";
 import { Snippet } from "app/(post)/components/snippet";
 import { Caption } from "app/(post)/components/caption";
