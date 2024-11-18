@@ -3,7 +3,7 @@
     {
       "id": "frida-c-binary-reverse-engineering",
       "date": "Nov 17, 2024",
-      "title": "Reverse engineering a C Binary using Frida"
+      "title": "Reverse engineering a C Binary using Frida and Ghidra"
     }
   ]
 }

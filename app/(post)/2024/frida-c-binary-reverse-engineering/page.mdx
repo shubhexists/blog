@@ -1,0 +1,192 @@
+These are my notes of how to inject scripts into C binaries using Frida.
+
+## Context
+
+Frida is a tool to dynamically inject script to memory locations and extract data from them. It is most commonly used in Reverse Engineering and modding applications.
+
+Example C Script which will be taken as reference -
+
+```
+// main.c
+
+#include <stdio.h>
+#include <unistd.h>
+
+int checkPassword(int input)
+{
+    if (input == 1234)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int main()
+{
+    int input = 0;
+    int result = 0;
+
+    while (1)
+    {
+        printf("%s\n", "Enter the pin: ");
+        scanf("%d", &input);
+        sleep(10);
+        result = checkPassword(input);
+
+        if (result)
+        {
+            printf("%s\n", "Win!");
+            break;
+        }
+        else
+        {
+            printf("%s\n", "Fail.");
+        }
+    }
+
+    return 0;
+}
+```
+
+<Caption>
+  This function repeatedly takes Input from User till he enter's the correct
+  number. It sleeps for 10 secs after every attempt
+</Caption>
+
+Compile this C script into a binary named `demo`
+
+```
+gcc -o demo demo.c
+```
+
+## Frida
+
+### Installation
+
+```
+sudo apt install build-essential
+sudo pip install frida
+sudo pip install frida-tools
+```
+
+Now first let's try to remove the 10 secs timer (which anyways makes no sense) -
+
+Run the binary in one terminal instance.
+
+Run `sudo frida demo` on the other. `demo` is the process name which we are trying to hook frida to -
+
+![Frida Start](/fridastart.png)
+
+Run
+
+```
+Module.enumerateSymbolsSync("demo")
+```
+
+![Enumerate Symbol Sync](/enumeratesymbolsync.png)
+
+<Caption>
+  Output of the above command has a lot of objects. We would focus on memory
+  where "sleep" is called.
+</Caption>
+
+To get the address of this function -
+
+```
+Module.getExportByName(null, "sleep");
+```
+
+![Get Export By Name](/getexportbyname.png)
+
+This address keeps changing every time we run the `demo` binary. So, we need to write a script to dynamically get the memory address of this function using Frida.
+
+```
+// script.js
+
+var sleep = Module.getExportByName(null, 'sleep');
+
+Interceptor.attach(sleep, {
+  onEnter: function (args) {
+    console.log('Entering sleep...');
+    console.log('Sleeping for: ' + parseInt(args[0]) + ' seconds.');
+    console.log('Overriding sleep argument.');
+    args[0] = ptr('0x00');
+  },
+  onLeave: function (ret) {
+    console.log('Leaving sleep...');
+  },
+});
+```
+
+`sleep` variable has the memory address of the sleep function.
+We use the onEnter function provided by Frida to make the argument of the sleep function to "0".
+
+Inject this script into the binary by `sudo frida demo -l script.js`
+
+Now the binary won't have any sleep time after every request. :)
+
+Now the issue is we could only get the addresses of the functions that are present in C. Injecting scripts in custom functions like `checkPassword` is a tricky process and we need decompilers to help us here.
+
+In this tutorial, I'll use `Ghidra` to decompile our C binary.
+
+![Ghidra Demo](/ghidrademo.png)
+
+In the left sidebar, navigate to checkPassword function and then press the `Display Function Graph` for better visualization.
+
+![Display Function Graph](/functiongraph.png)
+
+Navigate to the desired function here, `checkPassword` and on right clicking it, click on copy special and then copy the address.
+
+![Copy Address](/copyaddress.png)
+
+> NOTE -
+> This address is a relative address of the binary (offset).
+> This assumes the start of the binary as 0x00 and gives the relative address of the `checkPassword` function.
+
+Since, we know the relative path of the function, we can write the script to get the relative to get the function.
+
+```
+// script.js
+
+var checkPass = Process.enumerateModulesSync()[0].base.add('0x11a9');
+
+Interceptor.attach(checkPass, {
+  onEnter: function (args) {
+    console.log('Entering checkPass');
+  },
+  onLeave: function (ret) {
+    console.log('Returning: ' + parseInt(ret));
+    console.log('Overwriting return value.');
+    ret.replace(ptr('0x01'));
+    console.log('Returning: ' + parseInt(ret));
+  },
+});
+```
+
+<Caption>
+  Assuming the "address" to be `0x11a9` NativeFunction takes in address, return
+  type and an array of arguments.
+</Caption>
+
+This takes the return value and makes it always "1". So any number will now pass the check password test.
+
+```
+// script.js
+
+var checkPass = Process.enumerateModulesSync()[0].base.add('0x11a9');
+var checkPassFunc = new NativeFunction(checkPass, 'int', ['int']);
+
+for (let i = 1000; i < 2000; i++) {
+  var res = checkPassFunc(i);
+  console.log(res);
+  if (res == 1) {
+    console.log('Win: ' + i);
+    break;
+  }
+}
+```
+
+This takes in the function from the address and bruteforces it 1000 times.
+
+Similarly, a lot of functions are provided by Frida to dynamically inject scripts in C binaries.
+***
