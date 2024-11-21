@@ -4,6 +4,11 @@
       "id": "frida-c-binary-reverse-engineering",
       "date": "Nov 17, 2024",
       "title": "Reverse engineering a C Binary using Frida and Ghidra"
+    },
+    {
+      "id": "magisk-on-waydroid",
+      "date": "Nov 21, 2024",
+      "title": "Magisk on Waydroid and `adb`"
     }
   ]
 }
