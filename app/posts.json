@@ -9,6 +9,11 @@
       "id": "magisk-on-waydroid",
       "date": "Nov 21, 2024",
       "title": "Magisk on Waydroid and `adb`"
+    },
+    {
+      "id": "booting-arch-in-secure-mode",
+      "date": "Dec 09, 2024",
+      "title": "Booting Arch based Distro's in Secure Mode"
     }
   ]
 }
