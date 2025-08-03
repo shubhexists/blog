@@ -1,0 +1,52 @@
+export const metadata = {
+  title: "Arithmetic Circuits and Zero-Knowledge Proofs",
+  description:
+    "These are my notes while deep diving into zero knowledge proofs",
+  openGraph: {
+    title: "Arithmetic Circuits and Zero-Knowledge Proofs",
+    description:
+      "These are my notes while deep diving into zero knowledge proofs",
+    images: [{ url: "/og/ghidra.webp" }], // CHANGE THIS
+  },
+};
+
+Hi, these are my notes while deep diving into zero knowledge proofs.
+
+## Terminologies
+- PSPACE Problems - Problems that require exponential resources to solve and verify.
+- P Problems - Problem should be both solveable and verifyable in polynomial time.
+- NP Problem - Problem should be verifyable in polynomial time but might take exponential time to solve.
+
+![NP-P](/np-p.png)
+
+To verify every problem, we must be able to put that problem in form of a boolean expression (formula).
+These boolean circuits use logic gates (AND, OR, NOT etc).
+Having a possible solution that makes the equation `true` means that problem is true.
+
+### How it relates to ZK Proof?
+ZK Proofs only work with NP and P type of problems. i.e. the ones that are easily verifyable.
+We assume that the user knows the problem to the boolean problem that only he can solve.
+We verify it as NP or P problems are easily verifyable.
+
+Without efficient verification, creating a zero knowledge proof for a problem becomes infeasible.
+
+## Arithmetic Circuits
+Binary Circuits are usually very long even for very small problems and hence we usually use Arithmetic Circuits
+to represent Zero Knowledge proofs.
+
+An arithmetic circuit is a system of equations using only addition, multiplication, and equality. (NOTHING ELSE)
+Variables in an arithmetic circuit are referred to as `signals`.
+
+Example - 
+
+```
+6 = x₁ + x₂
+9 = x₁x₂
+```
+This is not a equation that we need to solve. User who needs to provide us the solution would give us the answers
+to prove that he knows something and we would just need to verify it by putting values.
+
+Many ZK Algorithms like SNARK, STARK and Bulletproof rely on these arithmetic circuits.
+These circuits naturally translate into a Rank-1 Constraint System (R1CS) which is a standard representation in Zero Knowledge Proofs.
+
+The prover can assign arbitary values to the curcuit's signals, but the proof is only valid only if these values satify the condition.

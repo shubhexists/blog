@@ -6,14 +6,14 @@
       "title": "Reverse engineering a C Binary using Frida and Ghidra"
     },
     {
-      "id": "magisk-on-waydroid",
-      "date": "Nov 21, 2024",
-      "title": "Magisk on Waydroid and `adb`"
-    },
-    {
       "id": "booting-arch-in-secure-mode",
       "date": "Dec 09, 2024",
       "title": "Booting Arch based Distro's in Secure Mode"
+    },
+    {
+      "id": "arithmetic-circuits-and-zero-knowledge-proofs",
+      "date": "Aug 03, 2025",
+      "title": "ZK-0: Arithmetic Circuits and Zero-Knowledge Proofs"
     }
   ]
 }

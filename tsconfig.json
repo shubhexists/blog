@@ -36,7 +36,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "app/(post)/2025/arithmetic-circuits-and-zero-knowledge-proofs/page.mdx"  ],
   "exclude": [
     "node_modules"
   ]
