@@ -6,13 +6,14 @@ export const metadata = {
     title: "Arithmetic Circuits and Zero-Knowledge Proofs",
     description:
       "These are my notes while deep diving into zero knowledge proofs",
-    images: [{ url: "/og/ghidra.webp" }], // CHANGE THIS
+    images: [{ url: "/og/zkp.png" }],
   },
 };
 
 Hi, these are my notes while deep diving into zero knowledge proofs.
 
 ## Terminologies
+
 - PSPACE Problems - Problems that require exponential resources to solve and verify.
 - P Problems - Problem should be both solveable and verifyable in polynomial time.
 - NP Problem - Problem should be verifyable in polynomial time but might take exponential time to solve.
@@ -24,6 +25,7 @@ These boolean circuits use logic gates (AND, OR, NOT etc).
 Having a possible solution that makes the equation `true` means that problem is true.
 
 ### How it relates to ZK Proof?
+
 ZK Proofs only work with NP and P type of problems. i.e. the ones that are easily verifyable.
 We assume that the user knows the problem to the boolean problem that only he can solve.
 We verify it as NP or P problems are easily verifyable.
@@ -31,18 +33,20 @@ We verify it as NP or P problems are easily verifyable.
 Without efficient verification, creating a zero knowledge proof for a problem becomes infeasible.
 
 ## Arithmetic Circuits
+
 Binary Circuits are usually very long even for very small problems and hence we usually use Arithmetic Circuits
 to represent Zero Knowledge proofs.
 
 An arithmetic circuit is a system of equations using only addition, multiplication, and equality. (NOTHING ELSE)
 Variables in an arithmetic circuit are referred to as `signals`.
 
-Example - 
+Example -
 
 ```
 6 = x₁ + x₂
 9 = x₁x₂
 ```
+
 This is not a equation that we need to solve. User who needs to provide us the solution would give us the answers
 to prove that he knows something and we would just need to verify it by putting values.
 
@@ -50,3 +54,302 @@ Many ZK Algorithms like SNARK, STARK and Bulletproof rely on these arithmetic ci
 These circuits naturally translate into a Rank-1 Constraint System (R1CS) which is a standard representation in Zero Knowledge Proofs.
 
 The prover can assign arbitary values to the curcuit's signals, but the proof is only valid only if these values satify the condition.
+
+## Examples of constructing Arithmetic Circuits
+
+### 3-Coloring Australia
+
+![Australia](/3-color-aus.png)
+
+We will attempt to put the constraint the condition of colouring Australia in 3 colors in a way that no adjacent states should have same color using Arithmetic circuits.
+
+SOLUTION -
+
+We will provide variables (signals) to each possible colour and state -
+
+- Blue -> 1
+- Red -> 2
+- Green -> 3
+
+- Western Australia -> WA
+- Southern Australia -> SA
+- Victoria -> V
+- Northern Territory -> NT
+- Queensland -> Q
+- New South Wales -> NSW
+
+Now first we will have to restrict the colour of each individual state among these 3 colours only.
+This can be done by -
+
+```
+0 === (1 - WA) * (2 - WA) * (3 - WA)
+0 === (1 - SA) * (2 - SA) * (3 - SA)
+0 === (1 - V) * (2 - V) * (3 - V)
+0 === (1 - NT) * (2 - NT) * (3 - NT)
+0 === (1 - Q) * (2 - Q) * (3 - Q)
+0 === (1 - NSW) * (2 - NSW) * (3 - NSW)
+```
+
+Now we'll have to construct the conditions that no two neighboring states are of the same colour.
+
+<StateTable>
+  <thead>
+    <tr>
+      <StateHeader>State A</StateHeader>
+      <StateHeader>Adjacent State B</StateHeader>
+      <StateHeader>Product (A * B)</StateHeader>
+      <StateHeader>Is Selected?</StateHeader>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <StateCell>1</StateCell>
+      <StateCell>1</StateCell>
+      <StateCell>1</StateCell>
+      <StateCell>No</StateCell>
+    </tr>
+    <tr>
+      <StateCell>1</StateCell>
+      <StateCell>2</StateCell>
+      <StateCell>2</StateCell>
+      <StateCell>Yes</StateCell>
+    </tr>
+    <tr>
+      <StateCell>1</StateCell>
+      <StateCell>3</StateCell>
+      <StateCell>3</StateCell>
+      <StateCell>Yes</StateCell>
+    </tr>
+    <tr>
+      <StateCell>2</StateCell>
+      <StateCell>1</StateCell>
+      <StateCell>2</StateCell>
+      <StateCell>Yes</StateCell>
+    </tr>
+    <tr>
+      <StateCell>2</StateCell>
+      <StateCell>2</StateCell>
+      <StateCell>4</StateCell>
+      <StateCell>No</StateCell>
+    </tr>
+    <tr>
+      <StateCell>2</StateCell>
+      <StateCell>3</StateCell>
+      <StateCell>6</StateCell>
+      <StateCell>Yes</StateCell>
+    </tr>
+    <tr>
+      <StateCell>3</StateCell>
+      <StateCell>1</StateCell>
+      <StateCell>3</StateCell>
+      <StateCell>Yes</StateCell>
+    </tr>
+    <tr>
+      <StateCell>3</StateCell>
+      <StateCell>2</StateCell>
+      <StateCell>6</StateCell>
+      <StateCell>Yes</StateCell>
+    </tr>
+    <tr>
+      <StateCell>3</StateCell>
+      <StateCell>3</StateCell>
+      <StateCell>9</StateCell>
+      <StateCell>No</StateCell>
+    </tr>
+  </tbody>
+</StateTable>
+
+As we can see from the above table, if the product of colours of two neighbouring states is 1, 4 or 9 then we won't be selecting the case
+ans it will represent that the neighboring states have the same color.
+
+Similarly, we will only be selecting states that have product of their colours equal to 2, 3 or 6.
+
+Now, neighboring state combinations are (WA, NT), (WA, SA), (SA, NT), (SA, Q), (SA, NSW), (SA, V), (NT, Q), (Q, NSW), (NSW, V).
+Writing these conditions in Arithmetic circuits -
+
+```
+0 === (2 - WA*NT)(3 - WA*NT)(6 - WA*NT)
+0 === (2 - WA*SA)(3 - WA*SA)(6 - WA*SA)
+0 === (2 - SA*NT)(3 - SA*NT)(6 - SA*NT)
+0 === (2 - SA*Q)(3 - SA*Q)(6 - SA*Q)
+0 === (2 - SA*NSW)(3 - SA*NSW)(6 - SA*NSW)
+0 === (2 - SA*V)(3 - SA*V)(6 - SA*V)
+0 === (2 - NT*Q)(3 - NT*Q)(6 - NT*Q)
+0 === (2 - Q*NSW)(3 - Q*NSW)(6 - Q*NSW)
+0 === (2 - NSW*V)(3 - NSW*V)(6 - NSW*V)
+```
+
+Combining the above two codeblocks will give us the solution for the 3-Coloring Australia problem.
+
+```
+0 === (1 - WA) * (2 - WA) * (3 - WA)
+0 === (1 - SA) * (2 - SA) * (3 - SA)
+0 === (1 - V) * (2 - V) * (3 - V)
+0 === (1 - NT) * (2 - NT) * (3 - NT)
+0 === (1 - Q) * (2 - Q) * (3 - Q)
+0 === (1 - NSW) * (2 - NSW) * (3 - NSW)
+
+0 === (2 - WA*NT)(3 - WA*NT)(6 - WA*NT)
+0 === (2 - WA*SA)(3 - WA*SA)(6 - WA*SA)
+0 === (2 - SA*NT)(3 - SA*NT)(6 - SA*NT)
+0 === (2 - SA*Q)(3 - SA*Q)(6 - SA*Q)
+0 === (2 - SA*NSW)(3 - SA*NSW)(6 - SA*NSW)
+0 === (2 - SA*V)(3 - SA*V)(6 - SA*V)
+0 === (2 - NT*Q)(3 - NT*Q)(6 - NT*Q)
+0 === (2 - Q*NSW)(3 - Q*NSW)(6 - Q*NSW)
+0 === (2 - NSW*V)(3 - NSW*V)(6 - NSW*V)
+```
+
+### Proving that a list is sorted
+
+We have to prove that a list is sorted using Arithmetic Circuits i.e every element of list is ">=" it's last element.
+Now, in arithmetic circuits, we can only use Addition, Equation and Multiplication. We need to find a way to represent ">=" in terms of these three operations.
+
+We need to convert the numbers to binary for this. Property we'll use to solve this are -
+
+> 2^(n) takes n+1 bits in binary and it is the smallest n+1 bin number.
+> Any positive number added to this will always have the Most Significant Bit (MSB) of the output as 1.
+> Any negative number added to this will make the number less than n+1 bits and MSB will become 0.
+
+So for every element in the array with n bit elements, we will be calculating
+`2^n + (u-v)` and if the MSB of this is 1, this will assert that the u is greater v.
+
+So, arithmetic circuit for checking 2 numbers is -
+
+```
+/// Restrict u and v to n bits
+u === 2^(n-1) * C(n-1) + 2^(n-2) * C(n-2) + ........ + 2 * C(1) + C(0)
+v === 2^(n-1) * D(n-1) + 2^(n-2) * D(n-2) + ........ + 2 * D(1) + D(0)
+
+/// C(n) should be binary
+(C(n - 1) - 1) * C(n - 1) === 0
+(C(n - 2) - 1) * C(n - 2) === 0
+...
+(C(0) - 1) * C(0) === 0
+
+/// D(n) should be binary
+(D(n - 1) - 1) * D(n - 1) === 0
+(D(n - 2) - 1) * D(n - 2) === 0
+...
+(D(0) - 1) * D(0) === 0
+
+/// 2^n should be a (n+1) bit number
+2^n + (u - v) = 2^(n) * E(n) + 2^(n-1) * E(n-1) + ........ + 2 * E(1) + E(0)
+
+/// E(n) should be binary
+(E(n) - 1) * E(n) === 0
+(E(n - 1) - 1) * E(n - 1) === 0
+...
+(E(0) - 1) * E(0) === 0
+
+/// MSB Should be 1 is u > v
+E(n) === 1
+```
+
+Repeat this for all consecutive elements of an array to verify if it is sorted.
+This method in ZKP is called Range Checks and is used to prevent numbers going outside a certain range.
+
+# Finite Fields
+
+The problem with above arithmetic circuits are that is might overflow easily and we won't be able to represent fractions that way. Hence we need finite fields.
+
+Given a prime number p, we can make a finite field with p elements by taking the set of integers `{0, 1,2, .... , p-1}` and define addition and multiplication to be done modulo `p`.
+Any number outside this range (>=p or < 0) is always mapped to an "equivalent" number in this range using modulo `p`. The technical word for "equivalent" is congruent.
+
+The order of a finite field is the number of elements in it. For a finite field built from a prime p, the order is exactly p.
+Common choice in cryptography is `p = 2²⁵⁵ - 19` (used in Curve25519)
+
+## Properties of Finite Fields
+
+### Addition Identity
+
+Adding `p` to any number in a finite field results in the same number. It is equivalent to adding 0.
+
+### Additive Inverse
+
+The additive inverse of a is `(p - a) mod p`.
+
+Example in field with p = 7:
+
+1. Additive inverse of 3 is 4 (because 3 + 4 = 7 ≡ 0 mod 7)
+2. Additive inverse of 5 is 2 (because 5 + 2 = 7 ≡ 0 mod 7)
+3. Additive inverse of 0 is 0 (because 0 + 0 = 0)
+
+### Multiplicative Inverse
+
+Every non-zero element a in a finite field has a multiplicative inverse `a⁻¹` such that `a * a⁻¹ = 1`.
+
+Example in field with p = 7:
+
+1. Multiplicative inverse of 3 is 5 (because 3 \* 5 = 15 ≡ 1 mod 7)
+2. Multiplicative inverse of 2 is 4 (because 2 \* 4 = 8 ≡ 1 mod 7)
+3. Multiplicative inverse of 6 is 6 (because 6 \* 6 = 36 ≡ 1 mod 7)
+
+- Element of value `p-1` and `1` is it's own multiplicative inverse.
+- 0 does not have a multiplicative inverse.
+- Every number (except 0) has exactly one multiplicative inverse (which could be itself).
+
+Fermat's Little Theorem -
+
+It states that -
+
+```
+a^(p) === a (mod p), a != 0
+```
+
+Eg. 2^3 divided by 3 will give 3.
+
+In practice, this is not an ideal way to compute multiplicative inverses because raising a number to a large power is computationally expensive.
+
+### Fractions
+
+`a/b` in a finite field can be represented as `a * mul_inv(b)`.
+
+For adding fractions a/b + c/d:
+
+1. Find common denominator: `(a*d + c*b)/(b*d)`
+2. In finite fields: `(a*d + c*b) * (b*d)⁻¹`
+
+### Finite field “division” does not suffer from precision loss
+
+### Finite Field Elements Do Not Have A Traditional Notion Of "Even" Or "Odd"
+
+### A \* B ≠ 0 For All Nonzero A, B
+
+### Finite field operations are associative, commutative, and distributive
+
+Associativity -
+
+- Addition: `(a + b) + c = a + (b + c)`
+- Multiplication: `(a * b) * c = a * (b * c)`
+
+Commutativity -
+
+- Addition: `a + b = b + a`
+- Multiplication: `a * b = b * a`
+
+Distributivity -
+`a * (b + c) = (a * b) + (a * c)`
+
+### Modular Square Roots
+
+{/* INCOMPLETE */}
+Not every element in a finite field has a square root. Elements that do have square roots are called quadratic residues.
+Elements in a finite field do not need to be perfect squares to have a square root.
+
+Just like regular square roots, which have two solutions: a positive and negative one, modular square roots in a finite field also have two solutions. The exception is the element 0, which only has 0 as its square root.
+The second square root is always the additive inverse of the first square root, just like real numbers.
+
+If the prime number is not of the form `4k + 3` then the Tonelli-Shanks algorithm must be used to compute the modular square root
+
+### Linear systems of equations in finite fields
+
+Finite field systems of equations also have
+
+1. No solution
+2. One solution
+3. p solutions, i.e. as many solutions as the order of the field
+
+However, just because a linear system of equations over real numbers has zero, one, or infinite solutions it does not imply that the same linear system of equations over a finite field will also have zero, one or, p many solutions.
+
+### Polynomials in finite fields
