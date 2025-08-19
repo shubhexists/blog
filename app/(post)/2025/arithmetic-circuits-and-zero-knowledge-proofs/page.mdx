@@ -251,7 +251,7 @@ This method in ZKP is called Range Checks and is used to prevent numbers going o
 
 # Finite Fields
 
-The problem with above arithmetic circuits are that is might overflow easily and we won't be able to represent fractions that way. Hence we need finite fields.
+The problem with above arithmetic circuits are that it might overflow easily and we won't be able to represent fractions that way. Hence we need finite fields.
 
 Given a prime number p, we can make a finite field with p elements by taking the set of integers `{0, 1,2, .... , p-1}` and define addition and multiplication to be done modulo `p`.
 Any number outside this range (>=p or < 0) is always mapped to an "equivalent" number in this range using modulo `p`. The technical word for "equivalent" is congruent.
@@ -297,7 +297,7 @@ It states that -
 a^(p) === a (mod p), a != 0
 ```
 
-Eg. 2^3 divided by 3 will give 3.
+Eg. 2^3 divided by 3 will give 2.
 
 In practice, this is not an ideal way to compute multiplicative inverses because raising a number to a large power is computationally expensive.
 
@@ -333,7 +333,6 @@ Distributivity -
 
 ### Modular Square Roots
 
-{/* INCOMPLETE */}
 Not every element in a finite field has a square root. Elements that do have square roots are called quadratic residues.
 Elements in a finite field do not need to be perfect squares to have a square root.
 
@@ -341,6 +340,8 @@ Just like regular square roots, which have two solutions: a positive and negativ
 The second square root is always the additive inverse of the first square root, just like real numbers.
 
 If the prime number is not of the form `4k + 3` then the Tonelli-Shanks algorithm must be used to compute the modular square root
+
+I implemented a library in rust to calculate square roots in finite fields - [tonelli-rs](https://github.com/shubhexists/tonelli-rs)
 
 ### Linear systems of equations in finite fields
 
@@ -353,3 +354,211 @@ Finite field systems of equations also have
 However, just because a linear system of equations over real numbers has zero, one, or infinite solutions it does not imply that the same linear system of equations over a finite field will also have zero, one or, p many solutions.
 
 ### Polynomials in finite fields
+
+Popular finite fields in cryptography:
+
+- BN254: Used in many Ethereum ZK applications
+- BLS12-381: Used in newer protocols
+- Goldilocks: p = 2⁶⁴ - 2³² + 1, optimized for 64-bit computers
+- [tonelli-rs](https://github.com/shubhexists/tonelli-rs)
+
+### Linear systems of equations in finite fields
+
+Finite field systems of equations also have
+
+1. No solution
+2. One solution
+3. p solutions, i.e. as many solutions as the order of the field
+
+However, just because a linear system of equations over real numbers has zero, one, or infinite solutions it does not imply that the same linear system of equations over a finite field will also have zero, one or, p many solutions.
+
+### Polynomials in finite fields
+
+Popular finite fields in cryptography:
+
+- BN254: Used in many Ethereum ZK applications
+- BLS12-381: Used in newer protocols
+
+In finite fields there is no continous point (number system). The are discrete positive numbers in a set.
+So to calculate a polynomial or a equation in finite field, we have to calcualte the value of that equation on discrete points.
+
+![Polynomial in finite field](/polynomial_in_finite_field.png)
+
+Polynomials that do not have roots in real numbers may have roots in a finite field.
+
+Eg. `y = x^2 + 1` has no real roots. But in a finite field it can have roots. Let's say in a field of 17 it is -
+
+![Real roots](/no_real_roots.png)
+
+<Caption> The polynomial has roots 4 and 13 in a finite field of 17.</Caption>
+
+# Elementary Set Theory
+
+Functions in set theory is a relation between an input set and output set. It is a mapping between the two sets.
+
+"The Cartesian product of a collection of non-empty sets is non-empty."
+
+Just that, "Same domain element cannot map to two different codomain elements".
+
+- Valid:
+  (1, p), (2, q), (3, r)
+
+- Invalid:
+  (1, p) and (1, q) ← violates function rules. 1 maps to two values.
+
+"Taking a subset of the Cartesian product... is a relation."
+A relation is any subset of A\*B.
+
+Binary operator is a function from `A * A → B`. A binary operator takes 2 inputs from the same set and outputs one value from the same set.
+
+Closed binary operators must return results within the same set `A * A -> A`.
+
+- Division Is Not a Binary Operator Over Integers
+
+# Abstract Algebra
+
+Abstract Algebra is the study of sets that have one or more operators on that set.
+
+Given a set with a binary operator, we can categorize those sets based on how the binary operator behaves, and what elements are allowed (or expected) to be in the set.
+
+### Magma
+
+A Magma is a set with a closed binary operator. A Magma is one of the least restrictive kinds of algebraic structures.
+
+### Semigroup
+
+A Semigroup is a Magma where the binary operator must be associative i.e. `a(b + c) = (a + b)c`.
+
+### Monoid
+
+A Monoid is a Semigroup with an identity element.
+`a * e = e * a = a`.
+
+### Groups
+
+A Group is a Monoid in which each element has an inverse. Or to be explicit, it is a set with four properties
+
+1. The binary operator is closed (Magma)
+2. The binary operator is associative (Semigroup)
+3. The set has an identity element (Monoid)
+4. Every element has an inverse
+
+### Albelian
+
+Abelian means the binary operator is commutative.
+
+# Elementary Group Theory
+
+## Finite Groups
+
+A finite group has a finite number of elements in it. The set of all integers under addition is not finite, but addition of integers modulo a prime number is a finite group.
+
+The order of a group is the number of elements in it.
+
+## Cyclic Groups
+
+A cyclic group is a group that has an element such that every element in the group can be “generated” by applying the binary operator repeatedly to that element, or to it's inverse.
+
+> If a group is cyclic, then it is abelian
+
+Example - Addition modulo 7 is a cyclic group
+
+![Addition](/addition_cyclic_group.png)
+
+Multiplication modulo 7 is a cyclic group, if we exclude zero
+
+![Multiplication](/2_multiplication_cyclic_group.png)
+
+<Caption>
+  Note that generator 2 does not generate all the elements in the group.
+</Caption>
+
+![Multiplication](/3_multiplication_cyclic_group.png)
+
+3 as the generator generates all the number in the group. This is because 3 is a primitive root.
+
+> The identity element of a group is unique. A group can not have 2 identity elements.
+
+# Homomorphisms
+
+A homomorphism between two groups exists if a structure preserving map between the two groups exists.
+
+Let G and H be groups with operators.
+A function:
+
+```
+ϕ:G→H
+
+// such that
+ϕ(a⋅b)=ϕ(a)∗ϕ(b)
+```
+
+### Example
+
+Let's take two groups:
+
+```
+G=(Z,+) — integers under addition
+H=(Zn,+) — integers modulo n under addition
+```
+
+Define:
+
+```
+ϕ:Z→Zn by ϕ(k)=k modn
+```
+
+Then:
+
+```
+ϕ(a + b) = (a + b)modn= (a modn + b modn) modn = ϕ(a) + ϕ(b)
+```
+
+So, ϕ is a group homomorphism.
+
+Properties -
+
+- Identity is preserved
+
+```
+ϕ(eG) = eH
+```
+
+- Inverses are preserved
+
+```
+ϕ(g^-1)=ϕ(g)^-1
+```
+
+- Image of a group is a subgroup.
+- The kernel of a homomorphism is:
+
+```
+ker(ϕ) = {g ∈ G | ϕ(g) = eH}
+```
+
+It's a normal subgroup of G.
+It measures how much structure is lost in the mapping.
+
+- Trivial Homomorphism:
+
+```
+ϕ(g)=eH for all g ∈ G
+```
+
+“Elliptic curve points in a finite field under addition are a finite cyclic group and integers under addition are homomorphic to this group.”
+
+Homomorphisms are not necessarily bidirectional.
+If `ϕ: A -> B` is computationally difficult to invert, `ϕ` then homomorphically encrypts the elements of A. That means we can validate claims about computations in A using elements in B.
+
+## Elliptic Curve Point Addition
+
+Elliptic curves are a family of curves which have the formula -
+
+```
+y^2 = x^3 + ax + b
+```
+
+- Elliptic Curves form an abelian group under addition. Addition of two points on the curve returns another point on the curve.
+
+---
