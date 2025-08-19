@@ -14,6 +14,11 @@
       "id": "arithmetic-circuits-and-zero-knowledge-proofs",
       "date": "Aug 03, 2025",
       "title": "ZK-0: Arithmetic Circuits and mathematics involved in Zero-Knowledge Proofs"
+    },
+    {
+      "id": "zk-snarks",
+      "date": "Aug 20, 2025",
+      "title": "ZK-1: SNARKS"
     }
   ]
 }

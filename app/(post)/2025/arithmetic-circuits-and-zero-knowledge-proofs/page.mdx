@@ -10,76 +10,80 @@ export const metadata = {
   },
 };
 
-Hi, these are my notes while deep diving into zero knowledge proofs.
 
-## Terminologies
+These are my notes while deep diving into zero knowledge proofs.
 
-- PSPACE Problems - Problems that require exponential resources to solve and verify.
-- P Problems - Problem should be both solveable and verifyable in polynomial time.
-- NP Problem - Problem should be verifyable in polynomial time but might take exponential time to solve.
+## Understanding Problem Complexity Classes
+
+Before diving into zero-knowledge proofs, we need to understand the different types of computational problems:
+
+### Problem Classifications
+
+- **P Problems** - Problems that can be both solved and verified in polynomial time
+- **NP Problems** - Problems that can be verified in polynomial time but might take exponential time to solve
+- **PSPACE Problems** - Problems that require exponential resources to solve and verify
 
 ![NP-P](/np-p.png)
 
-To verify every problem, we must be able to put that problem in form of a boolean expression (formula).
-These boolean circuits use logic gates (AND, OR, NOT etc).
-Having a possible solution that makes the equation `true` means that problem is true.
+### The Foundation of Zero-Knowledge Proofs
 
-### How it relates to ZK Proof?
+To verify any problem, we must express it as a boolean formula using logic gates (AND, OR, NOT). A solution that makes this formula `true` proves the problem statement is valid.
 
-ZK Proofs only work with NP and P type of problems. i.e. the ones that are easily verifyable.
-We assume that the user knows the problem to the boolean problem that only he can solve.
-We verify it as NP or P problems are easily verifyable.
+**Key Insight**: Zero-knowledge proofs only work with NP and P problems because these are efficiently verifiable. We assume the prover knows a solution to a boolean problem that only they can solve, while verification remains computationally feasible.
 
-Without efficient verification, creating a zero knowledge proof for a problem becomes infeasible.
+Without efficient verification, creating zero-knowledge proofs becomes infeasible.
 
-## Arithmetic Circuits
+---
 
-Binary Circuits are usually very long even for very small problems and hence we usually use Arithmetic Circuits
-to represent Zero Knowledge proofs.
+## Arithmetic Circuits: A More Efficient Approach
 
-An arithmetic circuit is a system of equations using only addition, multiplication, and equality. (NOTHING ELSE)
-Variables in an arithmetic circuit are referred to as `signals`.
+Binary circuits become unwieldy even for small problems, so we use arithmetic circuits to represent zero-knowledge proofs more efficiently.
 
-Example -
+### What Are Arithmetic Circuits?
+
+An arithmetic circuit is a system of equations using **only three operations**:
+
+- Addition
+- Multiplication
+- Equality
+
+Variables in arithmetic circuits are called **signals**.
+
+**Example:**
 
 ```
 6 = x₁ + x₂
 9 = x₁x₂
 ```
 
-This is not a equation that we need to solve. User who needs to provide us the solution would give us the answers
-to prove that he knows something and we would just need to verify it by putting values.
+This isn't an equation to solve—the user provides values to prove their knowledge, and we verify by substitution.
 
-Many ZK Algorithms like SNARK, STARK and Bulletproof rely on these arithmetic circuits.
-These circuits naturally translate into a Rank-1 Constraint System (R1CS) which is a standard representation in Zero Knowledge Proofs.
+### Why Arithmetic Circuits Matter
 
-The prover can assign arbitary values to the curcuit's signals, but the proof is only valid only if these values satify the condition.
+Many ZK algorithms (SNARK, STARK, Bulletproof) rely on arithmetic circuits because they:
 
-## Examples of constructing Arithmetic Circuits
+- Translate naturally into Rank-1 Constraint Systems (R1CS)
+- Provide a standard representation for zero-knowledge proofs
+- Allow provers to assign arbitrary values to signals, with validity determined by constraint satisfaction
 
-### 3-Coloring Australia
+---
+
+## Practical Examples of Arithmetic Circuits
+
+### Example 1: 3-Coloring Australia
 
 ![Australia](/3-color-aus.png)
 
-We will attempt to put the constraint the condition of colouring Australia in 3 colors in a way that no adjacent states should have same color using Arithmetic circuits.
+**Problem**: Color Australia's states with 3 colors so no adjacent states share the same color.
 
-SOLUTION -
+**Solution Approach**:
 
-We will provide variables (signals) to each possible colour and state -
+We assign numerical values to colors and create variables for each state:
 
-- Blue -> 1
-- Red -> 2
-- Green -> 3
+- Blue → 1, Red → 2, Green → 3
+- States: WA, SA, V, NT, Q, NSW
 
-- Western Australia -> WA
-- Southern Australia -> SA
-- Victoria -> V
-- Northern Territory -> NT
-- Queensland -> Q
-- New South Wales -> NSW
-
-Now first we will have to restrict the colour of each individual state among these 3 colours only.
-This can be done by -
+**Step 1: Restrict each state to valid colors**
 
 ```
 0 === (1 - WA) * (2 - WA) * (3 - WA)
@@ -90,7 +94,9 @@ This can be done by -
 0 === (1 - NSW) * (2 - NSW) * (3 - NSW)
 ```
 
-Now we'll have to construct the conditions that no two neighboring states are of the same colour.
+**Step 2: Ensure adjacent states have different colors**
+
+We use the property that multiplying two identical color values gives us products we want to avoid:
 
 <StateTable>
   <thead>
@@ -159,13 +165,9 @@ Now we'll have to construct the conditions that no two neighboring states are of
   </tbody>
 </StateTable>
 
-As we can see from the above table, if the product of colours of two neighbouring states is 1, 4 or 9 then we won't be selecting the case
-ans it will represent that the neighboring states have the same color.
+Products 1, 4, and 9 indicate same-color neighbors (invalid). Products 2, 3, and 6 indicate different-color neighbors (valid).
 
-Similarly, we will only be selecting states that have product of their colours equal to 2, 3 or 6.
-
-Now, neighboring state combinations are (WA, NT), (WA, SA), (SA, NT), (SA, Q), (SA, NSW), (SA, V), (NT, Q), (Q, NSW), (NSW, V).
-Writing these conditions in Arithmetic circuits -
+For neighboring pairs (WA,NT), (WA,SA), (SA,NT), (SA,Q), (SA,NSW), (SA,V), (NT,Q), (Q,NSW), (NSW,V):
 
 ```
 0 === (2 - WA*NT)(3 - WA*NT)(6 - WA*NT)
@@ -179,386 +181,357 @@ Writing these conditions in Arithmetic circuits -
 0 === (2 - NSW*V)(3 - NSW*V)(6 - NSW*V)
 ```
 
-Combining the above two codeblocks will give us the solution for the 3-Coloring Australia problem.
+### Example 2: Proving a List Is Sorted
+
+**Challenge**: Prove every element is ≥ its predecessor using only addition, multiplication, and equality.
+
+**Key Insight**: We convert numbers to binary and use the property that for n-bit elements, `2^n + (u-v)` has MSB = 1 if and only if u ≥ v.
+
+**Solution for comparing two n-bit numbers u and v**:
 
 ```
-0 === (1 - WA) * (2 - WA) * (3 - WA)
-0 === (1 - SA) * (2 - SA) * (3 - SA)
-0 === (1 - V) * (2 - V) * (3 - V)
-0 === (1 - NT) * (2 - NT) * (3 - NT)
-0 === (1 - Q) * (2 - Q) * (3 - Q)
-0 === (1 - NSW) * (2 - NSW) * (3 - NSW)
+// Restrict u and v to n bits
+u === 2^(n-1) * C(n-1) + 2^(n-2) * C(n-2) + ... + 2 * C(1) + C(0)
+v === 2^(n-1) * D(n-1) + 2^(n-2) * D(n-2) + ... + 2 * D(1) + D(0)
 
-0 === (2 - WA*NT)(3 - WA*NT)(6 - WA*NT)
-0 === (2 - WA*SA)(3 - WA*SA)(6 - WA*SA)
-0 === (2 - SA*NT)(3 - SA*NT)(6 - SA*NT)
-0 === (2 - SA*Q)(3 - SA*Q)(6 - SA*Q)
-0 === (2 - SA*NSW)(3 - SA*NSW)(6 - SA*NSW)
-0 === (2 - SA*V)(3 - SA*V)(6 - SA*V)
-0 === (2 - NT*Q)(3 - NT*Q)(6 - NT*Q)
-0 === (2 - Q*NSW)(3 - Q*NSW)(6 - Q*NSW)
-0 === (2 - NSW*V)(3 - NSW*V)(6 - NSW*V)
-```
-
-### Proving that a list is sorted
-
-We have to prove that a list is sorted using Arithmetic Circuits i.e every element of list is ">=" it's last element.
-Now, in arithmetic circuits, we can only use Addition, Equation and Multiplication. We need to find a way to represent ">=" in terms of these three operations.
-
-We need to convert the numbers to binary for this. Property we'll use to solve this are -
-
-> 2^(n) takes n+1 bits in binary and it is the smallest n+1 bin number.
-> Any positive number added to this will always have the Most Significant Bit (MSB) of the output as 1.
-> Any negative number added to this will make the number less than n+1 bits and MSB will become 0.
-
-So for every element in the array with n bit elements, we will be calculating
-`2^n + (u-v)` and if the MSB of this is 1, this will assert that the u is greater v.
-
-So, arithmetic circuit for checking 2 numbers is -
-
-```
-/// Restrict u and v to n bits
-u === 2^(n-1) * C(n-1) + 2^(n-2) * C(n-2) + ........ + 2 * C(1) + C(0)
-v === 2^(n-1) * D(n-1) + 2^(n-2) * D(n-2) + ........ + 2 * D(1) + D(0)
-
-/// C(n) should be binary
-(C(n - 1) - 1) * C(n - 1) === 0
-(C(n - 2) - 1) * C(n - 2) === 0
+// Ensure binary constraints
+(C(n-1) - 1) * C(n-1) === 0
+(C(n-2) - 1) * C(n-2) === 0
 ...
 (C(0) - 1) * C(0) === 0
 
-/// D(n) should be binary
-(D(n - 1) - 1) * D(n - 1) === 0
-(D(n - 2) - 1) * D(n - 2) === 0
+(D(n-1) - 1) * D(n-1) === 0
+(D(n-2) - 1) * D(n-2) === 0
 ...
 (D(0) - 1) * D(0) === 0
 
-/// 2^n should be a (n+1) bit number
-2^n + (u - v) = 2^(n) * E(n) + 2^(n-1) * E(n-1) + ........ + 2 * E(1) + E(0)
+// Range check: 2^n + (u-v) should be (n+1)-bit number
+2^n + (u - v) = 2^n * E(n) + 2^(n-1) * E(n-1) + ... + 2 * E(1) + E(0)
 
-/// E(n) should be binary
+// Binary constraints for result
 (E(n) - 1) * E(n) === 0
-(E(n - 1) - 1) * E(n - 1) === 0
+(E(n-1) - 1) * E(n-1) === 0
 ...
 (E(0) - 1) * E(0) === 0
 
-/// MSB Should be 1 is u > v
+// MSB must be 1 for u ≥ v
 E(n) === 1
 ```
 
-Repeat this for all consecutive elements of an array to verify if it is sorted.
-This method in ZKP is called Range Checks and is used to prevent numbers going outside a certain range.
+This technique, called **Range Checks**, prevents numbers from exceeding specified bounds and is fundamental in ZKP systems.
 
-# Finite Fields
+---
 
-The problem with above arithmetic circuits are that it might overflow easily and we won't be able to represent fractions that way. Hence we need finite fields.
+## Finite Fields: Solving Overflow and Precision Issues
 
-Given a prime number p, we can make a finite field with p elements by taking the set of integers `{0, 1,2, .... , p-1}` and define addition and multiplication to be done modulo `p`.
-Any number outside this range (>=p or < 0) is always mapped to an "equivalent" number in this range using modulo `p`. The technical word for "equivalent" is congruent.
+Standard arithmetic circuits suffer from overflow and cannot represent fractions. Finite fields solve these problems.
 
-The order of a finite field is the number of elements in it. For a finite field built from a prime p, the order is exactly p.
-Common choice in cryptography is `p = 2²⁵⁵ - 19` (used in Curve25519)
+### What Is a Finite Field?
 
-## Properties of Finite Fields
+Given a prime number p, we create a finite field with p elements using integers `{0, 1, 2, ..., p-1}` where all operations are performed modulo p.
 
-### Addition Identity
+**Key Properties**:
 
-Adding `p` to any number in a finite field results in the same number. It is equivalent to adding 0.
+- **Order**: The number of elements (p for prime fields)
+- **Equivalence**: Numbers ≥ p or < 0 map to equivalent values in [0, p-1] via modulo p
+- **Common choice**: p = 2²⁵⁵ - 19 (used in Curve25519)
 
-### Additive Inverse
+### Essential Finite Field Properties
 
-The additive inverse of a is `(p - a) mod p`.
+#### Additive Operations
 
-Example in field with p = 7:
+- **Addition Identity**: Adding p to any number yields the same result (equivalent to adding 0)
+- **Additive Inverse**: For element a, the inverse is (p - a) mod p
 
-1. Additive inverse of 3 is 4 (because 3 + 4 = 7 ≡ 0 mod 7)
-2. Additive inverse of 5 is 2 (because 5 + 2 = 7 ≡ 0 mod 7)
-3. Additive inverse of 0 is 0 (because 0 + 0 = 0)
+_Example in field with p = 7_:
 
-### Multiplicative Inverse
+- Additive inverse of 3 is 4 (since 3 + 4 = 7 ≡ 0 mod 7)
+- Additive inverse of 5 is 2 (since 5 + 2 = 7 ≡ 0 mod 7)
 
-Every non-zero element a in a finite field has a multiplicative inverse `a⁻¹` such that `a * a⁻¹ = 1`.
+#### Multiplicative Operations
 
-Example in field with p = 7:
+- **Multiplicative Inverse**: Every non-zero element a has inverse a⁻¹ where a × a⁻¹ = 1
+- **Exception**: 0 has no multiplicative inverse
 
-1. Multiplicative inverse of 3 is 5 (because 3 \* 5 = 15 ≡ 1 mod 7)
-2. Multiplicative inverse of 2 is 4 (because 2 \* 4 = 8 ≡ 1 mod 7)
-3. Multiplicative inverse of 6 is 6 (because 6 \* 6 = 36 ≡ 1 mod 7)
+_Example in field with p = 7_:
 
-- Element of value `p-1` and `1` is it's own multiplicative inverse.
-- 0 does not have a multiplicative inverse.
-- Every number (except 0) has exactly one multiplicative inverse (which could be itself).
+- Multiplicative inverse of 3 is 5 (since 3 × 5 = 15 ≡ 1 mod 7)
+- Multiplicative inverse of 2 is 4 (since 2 × 4 = 8 ≡ 1 mod 7)
 
-Fermat's Little Theorem -
-
-It states that -
+**Fermat's Little Theorem** provides one method to compute inverses:
 
 ```
-a^(p) === a (mod p), a != 0
+a^(p-1) ≡ 1 (mod p) for a ≠ 0
+Therefore: a^(p-2) ≡ a^(-1) (mod p)
 ```
 
-Eg. 2^3 divided by 3 will give 2.
+#### Advanced Properties
 
-In practice, this is not an ideal way to compute multiplicative inverses because raising a number to a large power is computationally expensive.
+- **Fractions**: a/b = a × (multiplicative inverse of b)
+- **No Precision Loss**: Division doesn't suffer from floating-point errors
+- **Algebraic Structure**: Operations are associative, commutative, and distributive
+- **Square Roots**: Not all elements have square roots (quadratic residues). I implemented [tonelli-rs](https://github.com/shubhexists/tonelli-rs) for computing modular square roots
 
-### Fractions
+#### Working with Systems of Equations
 
-`a/b` in a finite field can be represented as `a * mul_inv(b)`.
-
-For adding fractions a/b + c/d:
-
-1. Find common denominator: `(a*d + c*b)/(b*d)`
-2. In finite fields: `(a*d + c*b) * (b*d)⁻¹`
-
-### Finite field “division” does not suffer from precision loss
-
-### Finite Field Elements Do Not Have A Traditional Notion Of "Even" Or "Odd"
-
-### A \* B ≠ 0 For All Nonzero A, B
-
-### Finite field operations are associative, commutative, and distributive
-
-Associativity -
-
-- Addition: `(a + b) + c = a + (b + c)`
-- Multiplication: `(a * b) * c = a * (b * c)`
-
-Commutativity -
-
-- Addition: `a + b = b + a`
-- Multiplication: `a * b = b * a`
-
-Distributivity -
-`a * (b + c) = (a * b) + (a * c)`
-
-### Modular Square Roots
-
-Not every element in a finite field has a square root. Elements that do have square roots are called quadratic residues.
-Elements in a finite field do not need to be perfect squares to have a square root.
-
-Just like regular square roots, which have two solutions: a positive and negative one, modular square roots in a finite field also have two solutions. The exception is the element 0, which only has 0 as its square root.
-The second square root is always the additive inverse of the first square root, just like real numbers.
-
-If the prime number is not of the form `4k + 3` then the Tonelli-Shanks algorithm must be used to compute the modular square root
-
-I implemented a library in rust to calculate square roots in finite fields - [tonelli-rs](https://github.com/shubhexists/tonelli-rs)
-
-### Linear systems of equations in finite fields
-
-Finite field systems of equations also have
+Finite field equation systems can have:
 
 1. No solution
 2. One solution
-3. p solutions, i.e. as many solutions as the order of the field
+3. p solutions (as many as the field order)
 
-However, just because a linear system of equations over real numbers has zero, one, or infinite solutions it does not imply that the same linear system of equations over a finite field will also have zero, one or, p many solutions.
+Importantly, real number solutions don't guarantee corresponding finite field solutions.
 
-### Polynomials in finite fields
+#### Polynomials in Finite Fields
 
-Popular finite fields in cryptography:
-
-- BN254: Used in many Ethereum ZK applications
-- BLS12-381: Used in newer protocols
-- Goldilocks: p = 2⁶⁴ - 2³² + 1, optimized for 64-bit computers
-- [tonelli-rs](https://github.com/shubhexists/tonelli-rs)
-
-### Linear systems of equations in finite fields
-
-Finite field systems of equations also have
-
-1. No solution
-2. One solution
-3. p solutions, i.e. as many solutions as the order of the field
-
-However, just because a linear system of equations over real numbers has zero, one, or infinite solutions it does not imply that the same linear system of equations over a finite field will also have zero, one or, p many solutions.
-
-### Polynomials in finite fields
-
-Popular finite fields in cryptography:
-
-- BN254: Used in many Ethereum ZK applications
-- BLS12-381: Used in newer protocols
-
-In finite fields there is no continous point (number system). The are discrete positive numbers in a set.
-So to calculate a polynomial or a equation in finite field, we have to calcualte the value of that equation on discrete points.
+Unlike continuous real polynomials, finite field polynomials are evaluated at discrete points only.
 
 ![Polynomial in finite field](/polynomial_in_finite_field.png)
 
-Polynomials that do not have roots in real numbers may have roots in a finite field.
+**Surprising Result**: Polynomials with no real roots may have finite field roots.
 
-Eg. `y = x^2 + 1` has no real roots. But in a finite field it can have roots. Let's say in a field of 17 it is -
+_Example_: y = x² + 1 has no real roots, but in a field of 17:
 
 ![Real roots](/no_real_roots.png)
 
-<Caption> The polynomial has roots 4 and 13 in a finite field of 17.</Caption>
+<Caption>The polynomial has roots 4 and 13 in a finite field of 17.</Caption>
 
-# Elementary Set Theory
+**Popular cryptographic finite fields**:
 
-Functions in set theory is a relation between an input set and output set. It is a mapping between the two sets.
+- **BN254**: Used in many Ethereum ZK applications
+- **BLS12-381**: Used in newer protocols
+- **Goldilocks**: p = 2⁶⁴ - 2³² + 1, optimized for 64-bit computers
 
-"The Cartesian product of a collection of non-empty sets is non-empty."
+---
 
-Just that, "Same domain element cannot map to two different codomain elements".
+## Mathematical Foundations: Set Theory and Abstract Algebra
 
-- Valid:
-  (1, p), (2, q), (3, r)
+### Elementary Set Theory
 
-- Invalid:
-  (1, p) and (1, q) ← violates function rules. 1 maps to two values.
+**Functions** establish mappings between input and output sets with the crucial restriction: each domain element maps to exactly one codomain element.
 
-"Taking a subset of the Cartesian product... is a relation."
-A relation is any subset of A\*B.
+**Valid mapping**: (1,p), (2,q), (3,r)  
+**Invalid mapping**: (1,p) and (1,q) ← violates function uniqueness
 
-Binary operator is a function from `A * A → B`. A binary operator takes 2 inputs from the same set and outputs one value from the same set.
+**Relations** are any subset of the Cartesian product A × B.
 
-Closed binary operators must return results within the same set `A * A -> A`.
+**Binary operators** are functions A × A → B, taking two inputs from set A and producing one output.
 
-- Division Is Not a Binary Operator Over Integers
+**Closed binary operators** satisfy A × A → A (output remains in the same set).
 
-# Abstract Algebra
+### Abstract Algebra Hierarchy
 
-Abstract Algebra is the study of sets that have one or more operators on that set.
+Abstract algebra studies sets with operators, classified by their behavioral properties:
 
-Given a set with a binary operator, we can categorize those sets based on how the binary operator behaves, and what elements are allowed (or expected) to be in the set.
+#### Magma
 
-### Magma
+- **Definition**: Set with a closed binary operator
+- **Requirement**: Operation results stay within the set
 
-A Magma is a set with a closed binary operator. A Magma is one of the least restrictive kinds of algebraic structures.
+#### Semigroup
 
-### Semigroup
+- **Definition**: Magma with associative operator
+- **Requirement**: a(b + c) = (a + b)c
 
-A Semigroup is a Magma where the binary operator must be associative i.e. `a(b + c) = (a + b)c`.
+#### Monoid
 
-### Monoid
+- **Definition**: Semigroup with identity element
+- **Requirement**: ∃e such that a × e = e × a = a
 
-A Monoid is a Semigroup with an identity element.
-`a * e = e * a = a`.
+#### Group
 
-### Groups
+- **Definition**: Monoid where every element has an inverse
+- **Requirements**:
+  1. Closed operation (Magma)
+  2. Associative operation (Semigroup)
+  3. Identity element (Monoid)
+  4. Every element has an inverse
 
-A Group is a Monoid in which each element has an inverse. Or to be explicit, it is a set with four properties
+#### Abelian Groups
 
-1. The binary operator is closed (Magma)
-2. The binary operator is associative (Semigroup)
-3. The set has an identity element (Monoid)
-4. Every element has an inverse
+- **Additional Property**: Commutative operation (a × b = b × a)
 
-### Albelian
+### Elementary Group Theory
 
-Abelian means the binary operator is commutative.
+#### Finite Groups
 
-# Elementary Group Theory
+Groups with finite element counts. The **order** of a group is its element count.
 
-## Finite Groups
+_Example_: Integer addition modulo a prime forms a finite group.
 
-A finite group has a finite number of elements in it. The set of all integers under addition is not finite, but addition of integers modulo a prime number is a finite group.
+#### Cyclic Groups
 
-The order of a group is the number of elements in it.
+Groups where every element can be generated by repeatedly applying the operator to a single **generator** element.
 
-## Cyclic Groups
+**Key Property**: All cyclic groups are abelian.
 
-A cyclic group is a group that has an element such that every element in the group can be “generated” by applying the binary operator repeatedly to that element, or to it's inverse.
+_Examples_:
 
-> If a group is cyclic, then it is abelian
-
-Example - Addition modulo 7 is a cyclic group
-
+**Addition modulo 7** (cyclic):
 ![Addition](/addition_cyclic_group.png)
 
-Multiplication modulo 7 is a cyclic group, if we exclude zero
+**Multiplication modulo 7** (excluding zero):
 
-![Multiplication](/2_multiplication_cyclic_group.png)
+- Generator 2: ![Multiplication](/2_multiplication_cyclic_group.png)
 
-<Caption>
-  Note that generator 2 does not generate all the elements in the group.
-</Caption>
+  <Caption>Generator 2 does not generate all elements.</Caption>
 
-![Multiplication](/3_multiplication_cyclic_group.png)
+- Generator 3: ![Multiplication](/3_multiplication_cyclic_group.png)
+  <Caption>
+    Generator 3 generates all elements because 3 is a primitive root.
+  </Caption>
 
-3 as the generator generates all the number in the group. This is because 3 is a primitive root.
+**Important**: Group identity elements are unique.
 
-> The identity element of a group is unique. A group can not have 2 identity elements.
+---
 
-# Homomorphisms
+## Homomorphisms: Structure-Preserving Maps
 
-A homomorphism between two groups exists if a structure preserving map between the two groups exists.
+### Definition
 
-Let G and H be groups with operators.
-A function:
+A **homomorphism** between groups G and H is a function φ: G → H that preserves the group operation:
 
 ```
-ϕ:G→H
-
-// such that
-ϕ(a⋅b)=ϕ(a)∗ϕ(b)
+φ(a ⋅ b) = φ(a) ∗ φ(b)
 ```
 
 ### Example
 
-Let's take two groups:
+Consider:
+
+- G = (ℤ, +): integers under addition
+- H = (ℤₙ, +): integers modulo n under addition
+
+Define φ: ℤ → ℤₙ by φ(k) = k mod n
+
+Then: φ(a + b) = (a + b) mod n = (a mod n + b mod n) mod n = φ(a) + φ(b)
+
+### Key Properties
+
+- **Identity preservation**: φ(eG) = eH
+- **Inverse preservation**: φ(g⁻¹) = φ(g)⁻¹
+- **Image is subgroup**: φ(G) ⊆ H forms a subgroup
+- **Kernel**: `ker(φ) = {g ∈ G | φ(g) = eH}` measures information loss
+
+### Cryptographic Significance
+
+**Crucial insight**: "Elliptic curve points in a finite field under addition form a finite cyclic group that is homomorphic to integers under addition."
+
+Homomorphisms enable **homomorphic encryption**: if φ: A → B is hard to invert, we can validate claims about computations in A using elements in B.
+
+---
+
+## Elliptic Curves: The Foundation of Modern Cryptography
+
+### Basic Definition
+
+Elliptic curves follow the equation:
 
 ```
-G=(Z,+) — integers under addition
-H=(Zn,+) — integers modulo n under addition
+y² = x³ + ax + b
 ```
 
-Define:
+**In finite fields**:
 
 ```
-ϕ:Z→Zn by ϕ(k)=k modn
+y² ≡ (x³ + ax + b) (mod p)
 ```
 
-Then:
+### Requirements
+
+- a, b ∈ F (the field)
+- 4a³ + 27b² ≠ 0 (ensures non-singularity—tangents exist at all points)
+
+### Geometric Properties
+
+- **Symmetry**: Always symmetric about the x-axis
+- **Intersections**: Meets x-axis at 1-3 points maximum
+
+### Group Operations
+
+#### Point Addition
+
+For points P(x₁, y₁) and Q(x₂, y₂):
+
+1. Draw line PQ
+2. Find third intersection point R with the curve
+3. Reflect R across x-axis to get P + Q
+
+![Point Addition](/elliptic_curve_point_addition.png)
+
+**Formulas**:
 
 ```
-ϕ(a + b) = (a + b)modn= (a modn + b modn) modn = ϕ(a) + ϕ(b)
+s = (y₂ - y₁)/(x₂ - x₁) (mod p)
+x₃ ≡ (s² - x₁ - x₂) (mod p)
+y₃ ≡ (s(x₁ - x₃) - y₁) (mod p)
 ```
 
-So, ϕ is a group homomorphism.
+#### Point Doubling
 
-Properties -
+For point P(x₁, y₁) to compute 2P:
 
-- Identity is preserved
+1. Draw tangent at P
+2. Find second intersection Q with curve
+3. Reflect Q across x-axis to get 2P
 
-```
-ϕ(eG) = eH
-```
+![Point Doubling](/point_doubling.png)
 
-- Inverses are preserved
-
-```
-ϕ(g^-1)=ϕ(g)^-1
-```
-
-- Image of a group is a subgroup.
-- The kernel of a homomorphism is:
+**Formulas**:
 
 ```
-ker(ϕ) = {g ∈ G | ϕ(g) = eH}
+s = (3x₁² + a)/(2y₁) (mod p)
+x₃ ≡ (s² - 2x₁) (mod p)
+y₃ ≡ (s(x₁ - x₃) - y₁) (mod p)
 ```
 
-It's a normal subgroup of G.
-It measures how much structure is lost in the mapping.
+#### Efficient Scalar Multiplication: Double-and-Add
 
-- Trivial Homomorphism:
+To compute kP efficiently:
+
+1. **Convert** k to binary: k = (bₘ₋₁bₘ₋₂...b₁b₀)₂
+2. **Initialize** R = P (start with MSB)
+3. **For each remaining bit** (MSB-1 down to LSB):
+   - Double: R = 2R
+   - If bit = 1: Add: R = R + P
+4. **Result**: R = kP
+
+### The Discrete Logarithm Problem
+
+**Given**:
+
+- Elliptic curve: y² = x³ + ax + b (mod p)
+- Group order: |E(Fₚ)| = n
+- Generator point P
+- Point R
+
+**Problem**: Find integer x where 1 ≤ x ≤ n such that:
 
 ```
-ϕ(g)=eH for all g ∈ G
+xP = R
 ```
 
-“Elliptic curve points in a finite field under addition are a finite cyclic group and integers under addition are homomorphic to this group.”
+**Asymmetry**:
 
-Homomorphisms are not necessarily bidirectional.
-If `ϕ: A -> B` is computationally difficult to invert, `ϕ` then homomorphically encrypts the elements of A. That means we can validate claims about computations in A using elements in B.
+- **Easy**: Computing R given x (forward direction)
+- **Hard**: Computing x given R (inverse/discrete logarithm)
 
-## Elliptic Curve Point Addition
+This asymmetry enables elliptic curve cryptography.
 
-Elliptic curves are a family of curves which have the formula -
+### Zero-Knowledge with Elliptic Curves
 
-```
-y^2 = x^3 + ax + b
-```
+**Claim**: "I know values x and y such that x + y = 15"
 
-- Elliptic Curves form an abelian group under addition. Addition of two points on the curve returns another point on the curve.
+**Protocol**:
+
+1. **Prover**: Computes A = xG and B = yG (where G is generator)
+2. **Prover**: Sends A and B to verifier
+3. **Verifier**: Computes 15G and checks that A + B = 15G
+
+**Security**: Without knowing x or y, the verifier can confirm the sum relationship while learning nothing about the individual values.
+
+---
+
+_This comprehensive guide covers the mathematical foundations essential for understanding zero-knowledge proofs, from basic arithmetic circuits through the elliptic curve cryptography that powers modern ZK systems._
 
 ---
