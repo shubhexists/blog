@@ -19,6 +19,11 @@
       "id": "zk-snarks",
       "date": "Aug 20, 2025",
       "title": "ZK-1: SNARKS"
+    },
+    {
+      "id": "attention-is-all-you-need",
+      "date": "Aug 26, 2025",
+      "title": "Attention is all you need"
     }
   ]
 }

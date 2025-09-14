@@ -1,0 +1,117 @@
+export const metadata = {
+  title: "Attention is all you need",
+  description:
+    "This is my understandings of the research paper about transformers",
+  openGraph: {
+    title: "Attention is all you need",
+    description:
+      "This is my understandings of the research paper about transformers",
+    images: [{ url: "/og/transformers.png" }],
+  },
+};
+
+This blog is a technical overview of the 2023 [research paper](https://arxiv.org/pdf/1706.03762) about transformers architecture.
+
+## Need of Transformers
+
+RNNs had several disadvantages that the transformers architecture aimed to solve.
+![RNN](/rnn.png)
+
+- Very slow for long sequences.
+- It moves one step at a time so by the end of a sentence, the context of the starting words(tokens) is very less till the last.
+
+## Transformers
+
+![Transformers](/transformers.png)
+
+<Caption>
+  There are two major components of a transformer - Encoder and Decoder{" "}
+</Caption>
+
+## 1) Encoder
+
+We have an initial fixed vocabulary where we assign a number to each word in our vocabulary based on their positions.
+
+### Input Embeddings
+
+The input numbers/vocabulary is then converted into a vector of size `dmodel` which is 512 in this example.
+Each parameter of the vector is variable and the model learns to tweak and change it during the training process to inculcate the meaning to the word.
+
+![Embeddings](/embeddings.png)
+
+### Positional Encodings
+
+This is a new vector that is added to each word in the sentence while training and inference to give the model an understanding of how close two words are in a sentence.
+We calculate Positional Encodings once in the start and then use the same values through out the training and the inference as these values remain the same throughout.
+
+This new vector is of the same size of the word embeddings i.e. `dmodel`.
+
+![Positional Encodings](/positional_encodings.png)
+
+Calculations of positional encodings -
+
+```
+// For even positions in the vector of size dmodel
+PE(pos,2i) = sin(pos/(10000^(2i/dmodel)))
+
+// For odd positions
+PE(pos, 2i + 1) = cos(pos/(10000^(2i/dmodel)))
+```
+
+![Maths for Positional Encodings](/maths_for_positional_encodings.png)
+
+<Caption>
+  As you can see the values of the above sentence can easily be reused
+  throughout multiple sentences as positional encodings only depend on the
+  position and the dmodel. `pos` is the position of the word in the sentence and
+  `i` is the `i`th row i.e. embedding of that word.
+</Caption>
+
+### Attention
+
+Attention allows the model to relate words with each other. Before transformers, we used to have self-attentions but transformers introduced the term multi head attentions.
+
+```
+Attention(Q,K,V) = softmax(Q*K/(Dk^(1/2))) * V
+```
+
+- Self Attention
+
+Imagine a sentence with 6 words (tokens) each with a vector of size `dmodel` (512). `Q` is the combination of these words to give us the sentence matrix of (6, 512) shape.
+`K` is the transpose of `Q` since we are calculating the self attention, i.e. the attention of each word with each other word in the sentence.
+We use the formula and calculate the softmax of the result.
+
+![Self Attention](/self_attention.png)
+
+<Caption>
+  The sum of all the values in a row or column sum upto 1. Here the numbers
+  represent how much close is a particular word to every other word in the
+  sentence. Note that the diagonal has the highest number in every row as a word
+  would be closest associated to itself.
+</Caption>
+
+We finally multiply the final softmax result with `V` to get the attention matrix which is the same shape of the sentence `Q`. For self attention, `V` is equal to `Q`.
+
+![Self Attention 2](/2_maths_for_positional_encodings.png)
+
+- Multi head attention
+
+We make 3 copies of the input and then pass them individually through parameter matrices that are linear layers of size `d_model` \* `d_model`. Each resultant matrix is divided into `h` heads and then, we have `h` parts of each Q, K and V.
+We calculate the attention individually for each corresponding node and then the resultant will be concatenated the heads into a common matrix which is of the same size of `seq * d_model`.
+Pass it through another linear layer and we get the final Multi Head Attention.
+
+![Multi Head Attention](/multi_head_attention.png)
+
+### Layer Normalization
+
+This is a process done to restrict the values in the vectors within 0 and 1. The main reason to do layer normalization is to Internal Covariate Shift.
+Suppose after backpropogation, the weights of layer 1 change a lot. The weights of layers after that would deviate a lot and the loss would increase. This would make the
+model training slow. Normalization prevents this.
+
+## 2) Decoder
+
+Most of the blocks are similar to the encoder block.
+
+![Decoder](/decoder.png)
+
+TO BE COMPLETED
