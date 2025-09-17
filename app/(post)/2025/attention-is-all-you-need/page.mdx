@@ -10,7 +10,9 @@ export const metadata = {
   },
 };
 
-This blog is a technical overview of the 2023 [research paper](https://arxiv.org/pdf/1706.03762) about transformers architecture.
+This blog is a technical overview of the 2023 [research paper](https://arxiv.org/pdf/1706.03762) about transformers architecture. Illustrations from [Umar Jamil's video](https://youtu.be/bCz4OMemCcA?si=n7sNbK4HX1BcT_Jh)
+
+Code reference to this blog can be found at - [Github](https://github.com/shubhexists/transformers)
 
 ## Need of Transformers
 
@@ -111,7 +113,47 @@ model training slow. Normalization prevents this.
 ## 2) Decoder
 
 Most of the blocks are similar to the encoder block.
+In the multi head attention of the decoder, the `key` and the `value` comes from the encoder block, while the `query` comes from the embeddings of the output.
+
+The linear and softmax after N attention blocks in the decoder, convert the embeddings back to the vocabulary number which is then converted to the text which that vocabulary represents.
 
 ![Decoder](/decoder.png)
 
-TO BE COMPLETED
+## Training
+
+Note - While training, we mask out the attention of the words in the sentence that are ahead of the the word we are calculating for. We do this to prevent the
+influence of the future words of the sentence to make a impact on the attention score of a word.
+
+![Masking](/masking.png)
+
+<Caption>
+  We make all the values above the diagonal as `-infinity` and since Softmax is
+  `e^x`, `e^-infinity` will be 0, thereby masking all the future values.
+</Caption>
+
+We first take the input sentence, append special tokens `<SOS>` and `<EOS>` in the sentence, and then we will calculate the attention values of the input text.
+Since we are training, we will know the output text also. We will start with `<SOS> {output_text}` and then run the decoder with the encoder values. The output of running the entire cycle should be
+`{output_text} <EOS>`. We would callculate the loss, backpropogate and then continue with the next data.
+
+> Note that we did the complete process in just one step instead of multiple single word loops in a RNN.
+
+![Training](/training.png)
+
+## Inference
+
+Inference of a transformer is a loop process. We keep on looping this the transformer returns a `<EOS>` token.
+The user provides the text that the model is querying from, so the text remains the same throughout the query, hence we calculate the input embeddings and attention once in the starting and then reuse the same embeddings throughout.
+
+The output embedding is to be determined, hence the starting output embedding is `<SOS>` token. The output of the 1st loop should be the 1st word of the response.
+![Inference](/1_inference.png)
+
+The output of the previous loop is appended to the main output string and then is passed to the transformer again.
+![Inference](/2_inference.png)
+
+This process continues till we get a `<EOS>`. We stop at EOS and return the response.
+![Inference](/3_inference.png)
+
+> The above strategy is called greedy where we just take the most rated word out of the decoder at each step. We can also use Beam search where we take the top B words from the Softmax and use them 
+> to calculate the next words for each of the B words. This way we can reduce overfitting. This is how `temprature` parameter is controlled in the model.
+
+---
