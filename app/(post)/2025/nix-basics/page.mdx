@@ -1,0 +1,754 @@
+export const metadata = {
+  title: "Nix Language Overview",
+  description:
+    "Basics of the nix language syntax",
+  openGraph: {
+    title: "Nix Language Overview",
+    description:
+      "Basics of the nix language syntax",
+    images: [{ url: "/og/nix.png" }],
+  },
+};
+
+These are my notes while learning the Nix expression language and understanding how it powers reproducible package management.
+
+## Understanding the Nix Language
+
+The Nix language is a pure, lazy, functional programming language designed specifically for describing packages and system configurations. Unlike imperative languages, Nix expressions describe *what* to build, not *how* to build it.
+
+### Core Philosophy
+
+- **Purely Functional** - No side effects during evaluation
+- **Lazy Evaluation** - Expressions are only evaluated when needed
+- **Immutable** - Values cannot be changed once defined
+- **Reproducible** - Same inputs always produce same outputs
+
+---
+
+## Basic Data Types and Values
+
+### Primitive Types
+
+Nix supports several fundamental data types:
+
+```nix
+# Numbers (integers and floats)
+t = 10 * 2 / 3;
+
+# Booleans
+a = toString false;  # "0"
+b = toString true;   # "1"
+e = ! true;          # false
+
+# Null
+foo = null;
+
+# Strings
+inter = let name = "shubh"; in "Hello ${name}";
+```
+
+### String Interpolation
+
+Nix provides powerful string interpolation using `${}` syntax:
+
+```nix
+int = let
+  a = 10;
+  b = 20;
+in "Hi ${toString (a + b)}";  # "Hi 30"
+```
+
+**Important**: Non-string values must be converted using `toString` before interpolation.
+
+### Multi-line Strings
+
+Nix supports indented multi-line strings using `''`:
+
+```nix
+x = let
+  a = ''
+    fuck my
+    life
+    hahaha
+  '';
+in a;
+```
+
+The indentation is automatically stripped based on the least indented line.
+
+---
+
+## Attribute Sets: The Foundation of Nix
+
+Attribute sets are Nix's primary data structure - similar to dictionaries or objects in other languages.
+
+### Basic Syntax
+
+```nix
+{
+  foo = null;
+  "foo.bar" = null;  # quoted keys allow special characters
+  fooz.bar = null;   # nested attribute
+}
+```
+
+### Nested Attributes
+
+```nix
+fooz.bar = null;
+
+# Equivalent to:
+fooz = {
+  bar = null;
+};
+```
+
+### Accessing Attributes
+
+```nix
+c = let
+  foo = {
+    bar.a = 10;
+    bar.b = 20;
+  };
+in foo.bar.a;  # 10
+```
+
+### Default Values with `or`
+
+Provide fallback values when attributes don't exist:
+
+```nix
+d = let
+  foo = {
+    bar.a = 10;
+    bar.b = 20;
+  };
+in foo.bar.e or 50;  # 50 (since 'e' doesn't exist)
+```
+
+### Checking Attribute Existence
+
+Use the `?` operator to test if an attribute exists:
+
+```nix
+k = let
+  rd = {x, y, ...}@attrs:
+    x + y + (if attrs ? ignored then attrs.ignored else 0);
+in rd {x = 1; y = 5; ignored = 4;};  # 10
+```
+
+---
+
+## Let Expressions: Local Scope
+
+Let expressions create local bindings that are only available within their scope.
+
+### Basic Syntax
+
+```nix
+variables = let
+  a = 10;
+in a + 1;  # 11
+```
+
+### Multiple Bindings
+
+```nix
+int = let
+  a = 10;
+  b = 20;
+in "Hi ${toString (a + b)}";
+```
+
+**Key Insight**: Order doesn't matter in let expressions due to lazy evaluation:
+
+```nix
+m = 10;
+n = toString o;  # Can reference 'o' before it's defined
+o = 4;
+```
+
+---
+
+## Functions: The Heart of Nix
+
+Functions in Nix are first-class values and follow a curried pattern.
+
+### Basic Function Syntax
+
+```nix
+somefn = x: x + 1;
+```
+
+### Currying and Multiple Arguments
+
+```nix
+f = let
+  sfn = x: y: x + y;
+in sfn 1 2;  # 3
+```
+
+**How it works**: `sfn` is actually a function that returns another function:
+- `sfn 1` returns a function `y: 1 + y`
+- This function is then called with `2`
+
+### Pattern Matching with Attribute Sets
+
+Functions can destructure attribute sets in their parameters:
+
+```nix
+g = let
+  rd = {x, y}: x + y;
+in rd {x = 1; y = 2;};  # 3
+```
+
+### Default Arguments
+
+Provide default values for missing attributes:
+
+```nix
+h = let
+  rd = {x, y ? 5, ...}: x + y;
+in rd {x = 1; ignore = 4;};  # 6 (y defaults to 5)
+```
+
+The `...` allows extra attributes to be passed without error.
+
+### The `@` Pattern
+
+Capture the entire attribute set while also destructuring:
+
+```nix
+i = let
+  rd = attrs@{x, y}: x + attrs.y;
+in rd {x = 1; y = 2;};  # 3
+```
+
+This gives you both the individual attributes AND the whole set.
+
+### Complete Pattern Example
+
+```nix
+l = let
+  rd = {x, y, ...}@attrs:
+    x + y + attrs.ignored or 0;
+in rd {x = 1; y = 5; ignored = 4};  # 10
+```
+
+This pattern:
+- Requires `x` and `y`
+- Allows extra attributes (`...`)
+- Captures the full set as `attrs`
+- Uses `or` for safe default access
+
+---
+
+## Conditional Expressions
+
+Nix supports standard if-then-else expressions:
+
+```nix
+j = if 1 + 1 == 3 then "10" else false;  # false
+```
+
+**Important**: Both branches must be present - there's no standalone `if` statement.
+
+---
+
+## The `with` Expression: Scope Extension
+
+The `with` expression brings all attributes of a set into scope:
+
+```nix
+p = let
+  a = {
+    x = 1;
+    y = 2;
+    z = 3;
+  };
+in with a; [x y z];  # [1 2 3]
+```
+
+### Practical Usage
+
+```nix
+ee = let
+  names = {fn = "shubham"; ln = "singh";};
+in with names; {
+  a = fn;  # No need for names.fn
+  b = ln;  # No need for names.ln
+};
+```
+
+### String Interpolation with `with`
+
+```nix
+u = let
+  a = {name = "shubham"; greeting = "How are you?";};
+in with a; "Hello ${name}! ${greeting}";
+```
+
+---
+
+## The `inherit` Keyword: Reducing Boilerplate
+
+The `inherit` keyword copies attributes from one set to another or from the surrounding scope.
+
+### Basic Inheritance
+
+```nix
+q = let
+  x = 1;
+  y = 2;
+in {
+  inherit x y;  # Same as: x = x; y = y;
+};
+```
+
+### Inheriting from Specific Sets
+
+```nix
+r = let
+  a = {b = 1; c = 2;};
+  m = {n = 3; o = 4;};
+in {
+  inherit (a) b;  # Same as: b = a.b;
+  inherit (m) n;  # Same as: n = m.n;
+};
+```
+
+### Inherit in Let Expressions
+
+```nix
+s = let
+  inherit ({x = 1; y = 3;}) x y;
+  # Shorthand for:
+  # a = {x = 1; y = 3};
+  # inherit (a) x y;
+in [x y];  # [1 3]
+```
+
+---
+
+## Lists: Ordered Collections
+
+Lists in Nix are space-separated values enclosed in square brackets:
+
+```nix
+builtfns = let
+  a = builtins.map (x: x + 1) [1 2 3];
+in a;  # [2 3 4]
+```
+
+Lists are commonly used with `with` to destructure attribute sets:
+
+```nix
+p = let
+  a = {x = 1; y = 2; z = 3;};
+in with a; [x y z];  # [1 2 3]
+```
+
+---
+
+## Paths: File System References
+
+Paths in Nix are first-class values that reference files and directories.
+
+### Path Types
+
+```nix
+# Absolute paths (start with /)
+/etc/nixos/configuration.nix
+
+# Relative paths (contain / but don't start with it)
+./default.nix
+../parent/file.nix
+
+# Path interpolation
+v = let
+  x = "result";
+in ./${x};  # ./result
+```
+
+### Paths and the Nix Store
+
+When you use a path in a string context, Nix copies it to the store:
+
+```nix
+# Creates a path in the nix store using content hash + filename
+cc = "${./data.nix}";  # "/nix/store/hash-data.nix"
+
+# Directories are copied entirely
+dd = "${./result}";  # "/nix/store/hash-result"
+```
+
+**Why this matters**: This ensures reproducibility - the exact file contents are captured by the hash.
+
+---
+
+## Built-in Functions
+
+Nix provides many built-in functions accessible via `builtins`:
+
+### Common Built-ins
+
+```nix
+builtins.map (x: x + 1) [1 2 3]  # [2 3 4]
+builtins.toString 123            # "123"
+builtins.fetchTarball "url"      # Downloads and unpacks
+builtins.currentSystem           # "x86_64-linux"
+```
+
+### Fetchers
+
+Nix includes several functions for downloading content:
+
+- **fetchTarball** - Downloads and unpacks tarballs
+- **fetchUrl** - Downloads files
+- **fetchGit** - Clones git repositories
+- **fetchClosure** - Imports pre-built store paths
+
+```nix
+zz = let
+  idk = fetchTarball "https://github.com/NixOS/nixpkgs/archive/master.tar.gz";
+  pkgs = import idk {};
+in pkgs.lib.strings.toUpper "i wish you loved me";
+```
+
+---
+
+## Nixpkgs: The Package Repository
+
+Nixpkgs is a massive repository of package definitions written in Nix.
+
+### Importing Nixpkgs
+
+```nix
+# Using angle bracket syntax (searches NIX_PATH)
+pkgs = import <nixpkgs> {};
+
+# Using fetchTarball for pinned versions
+nixpkgs = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/master.tar.gz";
+pkgs = import nixpkgs {
+  system = builtins.currentSystem;
+  config = {};
+  overlays = [];
+};
+```
+
+### Using Nixpkgs Libraries
+
+```nix
+z = let
+  pkgs = import <nixpkgs> {};
+in pkgs.lib.strings.toUpper "i wish you loved me";
+```
+
+### Function Arguments Pattern
+
+Common pattern for functions that depend on nixpkgs:
+
+```nix
+bb = let
+  lib = (import <nixpkgs> {}).lib;
+  upperCase = {lib, lower, ...}: lib.strings.toUpper lower;
+in upperCase {inherit lib; lower = "hi babies";};
+```
+
+---
+
+## Derivations: The Build Instructions
+
+Derivations are the fundamental building blocks in Nix - they describe how to build something.
+
+### Basic Derivation
+
+```nix
+derivation = let
+  smder = builtins.derivation {
+    name = "test";
+    builder = "/bin/sh";
+    system = "x86_64-linux";
+  };
+in smder;
+```
+
+### Standard Derivation with stdenv
+
+The standard environment (`stdenv`) provides common build tools:
+
+```nix
+{lib, stdenv, fetchurl}:
+
+let
+  pname = "hello";
+  version = "2.12";
+in
+stdenv.mkDerivation {
+  pname = pname;
+  version = version;
+  
+  src = fetchurl {
+    url = "mirror://gnu/${pname}/${pname}-${version}.tar.gz";
+    sha256 = "1ayhp9v4m4rdhjmnl2bq3cibrbqqkgjbl3s7yk2nhlh8vj3ay16g";
+  };
+  
+  meta = with lib; {
+    license = licenses.gpl3Plus;
+  };
+}
+```
+
+**Key Components**:
+- **pname** - Package name
+- **version** - Package version
+- **src** - Source code location
+- **meta** - Metadata (license, description, etc.)
+
+---
+
+## Shell Environments: Development Shells
+
+Nix can create isolated development environments with specific tools.
+
+### Creating a Shell Environment
+
+```nix
+{ pkgs ? import <nixpkgs> {} }:
+
+let
+  message = "hello world";
+in
+pkgs.mkShellNoCC {
+  packages = with pkgs; [ cowsay ];
+  
+  shellHook = ''
+    cowsay ${message}
+  '';
+  
+  # Custom environment variables
+  SHUBHAM = "SHUBHAM";
+}
+```
+
+### Using Shell Environments
+
+```bash
+# Using specific file
+nix-shell shellenv.nix
+
+# Default (looks for shell.nix)
+nix-shell
+```
+
+**What happens**: Nix creates a shell with:
+- Specified packages available
+- Custom environment variables set
+- Shell hook commands executed on entry
+
+---
+
+## Importing Files: Code Organization
+
+Nix files can import other Nix files to organize code.
+
+### Basic Import
+
+```nix
+# function.nix
+let
+  f = x: y: x + y;
+in f
+
+# default.nix
+y = import ./function.nix 1 2;  # 3
+```
+
+The imported file's final value becomes the import's value.
+
+### Importing Attribute Sets
+
+```nix
+# honey.nix
+let
+  a = 4;
+  b = {
+    fn = "Prasoon";
+    ln = "Kumar";
+    md = "";
+  };
+in with b; "${fn} ${md} ${ln}"
+
+# Using in another file
+result = import ./honey.nix;
+```
+
+---
+
+## Recursive Attribute Sets
+
+By default, attributes in a set can't reference each other. The `rec` keyword enables this:
+
+```nix
+# This FAILS:
+{
+  a = 1;
+  b = a + 1;  # Error: 'a' not in scope
+}
+
+# This WORKS:
+rec {
+  a = 1;
+  b = a + 1;  # OK
+}
+```
+
+**Best Practice**: Prefer `let` expressions over `rec` when possible for clearer scoping.
+
+---
+
+## Evaluation Commands
+
+Nix provides several commands for working with expressions:
+
+### nix-instantiate
+
+Evaluates expressions without building:
+
+```bash
+# Basic evaluation
+nix-instantiate --eval default.nix
+
+# Strict evaluation (forces all lazy values)
+nix-instantiate --eval --strict default.nix
+
+# With function arguments
+nix-instantiate --eval f.nix --arg a "hello"
+```
+
+### nix-build
+
+Builds derivations:
+
+```bash
+nix-build  # Builds default.nix
+nix-build -A myPackage  # Builds specific attribute
+```
+
+**Process**:
+1. Instantiates the derivation (creates .drv file)
+2. Realizes the derivation (performs actual build)
+3. Creates `result` symlink to output
+
+---
+
+## Purity and Impurity
+
+Understanding purity is crucial for understanding Nix's guarantees.
+
+### Pure Functions
+
+Nix expressions are pure - they don't interact with the outside world during evaluation:
+
+```nix
+# This is pure
+let
+  a = 10;
+  b = 20;
+in a + b
+```
+
+### Impure Operations
+
+Impurity happens when:
+- Derivations execute (they build things)
+- Files are fetched from the internet
+- The system is queried for information
+
+```nix
+# These introduce controlled impurity:
+builtins.currentSystem      # Depends on host system
+builtins.fetchurl "..."     # Network access
+import <nixpkgs> {}         # Depends on NIX_PATH
+```
+
+**Nix's approach**: Isolate impurity to well-defined boundaries (derivation builds, fetchers) while keeping expression evaluation pure.
+
+---
+
+## Common Patterns and Idioms
+
+### Package Definition Pattern
+
+```nix
+{lib, stdenv, dependency1, dependency2}:
+
+stdenv.mkDerivation {
+  pname = "mypackage";
+  version = "1.0.0";
+  
+  src = ./.;
+  
+  buildInputs = [ dependency1 dependency2 ];
+  
+  meta = with lib; {
+    description = "My package";
+    license = licenses.mit;
+    maintainers = with maintainers; [ myname ];
+  };
+}
+```
+
+### Configuration Pattern
+
+```nix
+{ config, pkgs, ... }:
+
+{
+  # System configuration
+  environment.systemPackages = with pkgs; [
+    vim
+    git
+  ];
+  
+  # Service configuration
+  services.nginx.enable = true;
+}
+```
+
+### Overlay Pattern
+
+Overlays modify nixpkgs:
+
+```nix
+self: super: {
+  myPackage = super.myPackage.overrideAttrs (old: {
+    version = "2.0.0";
+  });
+}
+```
+
+---
+
+## Key Takeaways
+
+- **Lazy Evaluation** - Expressions are only evaluated when needed, enabling circular references that wouldn't work in strict languages
+
+- **Attribute Sets** - The fundamental data structure; understanding them is crucial for reading Nix code
+
+- **Functions** - Curried by default; pattern matching on attribute sets is the primary way to handle "keyword arguments"
+
+- **Purity** - Expression evaluation is pure; impurity is contained to derivation builds
+
+- **Paths** - First-class values that automatically copy to the nix store when used in string contexts
+
+- **Derivations** - The bridge between pure expressions and real-world builds
+
+- **Import** - The mechanism for code organization; remember that angle brackets `<nixpkgs>` search `NIX_PATH`
+
+- **With and Inherit** - Powerful tools for reducing boilerplate when working with attribute sets
+
+Understanding these concepts provides the foundation for working with Nix's package management, NixOS configuration, and building reproducible systems.
+
+---

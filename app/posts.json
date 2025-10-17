@@ -24,6 +24,11 @@
       "id": "attention-is-all-you-need",
       "date": "Aug 26, 2025",
       "title": "Attention is all you need"
+    },
+    {
+      "id": "nix-basics",
+      "date": "Oct 17, 2025",
+      "title": "Nix Language Overview"
     }
   ]
 }
