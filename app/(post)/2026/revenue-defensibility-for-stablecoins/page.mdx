@@ -1,4 +1,12 @@
-export const metadata = {};
+export const metadata = {
+  title: "Stablecoins: Understanding the business, revenues and moats",
+  description: "This is a article about revenue defensibility of stablecoins",
+  openGraph: {
+    title: "Stablecoins: Understanding the business, revenues and moats",
+    description: "This is a article about revenue defensibility of stablecoins",
+    images: [{ url: "/og/stablecoins.png" }],
+  },
+};
 
 Stablecoin issuers like `Tether(USDT)` and `Circle(USDC)` mint digital assets pegged to a dollar.
 You give them a dollar and they mint you a token you can use.
@@ -25,4 +33,34 @@ So let me try to give you the metric.
 Don’t picture a stablecoin’s supply as a number. Picture it as a map of decision makers.
 
 1. `Atomization`: How many independent decision-makers control the supply. Literally a Herfindahl index over who owns the switch. One treasurer controlling a billion dollars is catastrophic atomization, no matter how “big” you are. A billion spread across fifty million wallets is enormous atomization.
-2. `Embeddedness`: For each decision-maker, how important is that asset. 
+2. `Embeddedness`: For each decision-maker, how important is that asset. Stablecoins like `polyUSD` have use cases for people who trade on prediction markets, encouraging people to hold it. Similarly, Circle's USDC is also in high demand becuase of Coinbase decides to keep 100% reserve income in USDC.
+   So essentially, for each decision-maker, how costly is switching? is also a moat of stablecoins.
+
+## Beyond holders: the moats nobody counts
+
+The strongest stablecoins don't win because lots of people hold them. They win because the entire crypto ecosystem is built around them.
+This is probably the strongest moat. It's just the standard unit used to measure prices. Every Trading Pair, Order Book, Price Chart, API, Trading Bot, Liquidation Engine etc
+is dependent on that coin.
+
+## Regulation
+
+Last but not the least, the biggest competitive advantage for stablecoins is no longer technology. It's regulation.
+For example, [the GENIUS Act, signed July 18, 2025, prohibits payment-stablecoin issuers from paying interest or yield.](https://www.congress.gov/crs-product/IF13174)
+
+This law highly favours already highly atomizatized stablecoins like USDC and USDT, as any new stablecoin (especially the compliant ones) would have a very hard time
+pulling holders from them to USDT.
+The yield war doesn’t end. It migrates — to the rewards layer (which is why [40+ banking groups want the ban extended to exchanges](https://bpi.com/closing-the-payment-of-interest-loophole-for-stablecoins/) and the [OCC has proposed exactly that](https://perkinscoie.com/insights/update/stablecoin-interest-yield-and-rewards-occ-proposes-sweeping-regulations-under))
+and to the securities-adjacent yield-token category.
+
+For the first time, stablecoins have a moat that behaves like a banking license because it basically is one. The counter-move is already forming: the [Open USD coalition — 140+ partners organized to commoditize Circle’s reserve yield](https://www.pymnts.com/cryptocurrency/2026/open-usd-just-turned-the-stablecoin-race-into-an-ecosystem-battle/) — a bet that if no
+single issuer can out-yield the incumbents, an ecosystem can out-distribute them by pooling the float.
+
+## Summary
+
+Stablecoins look like one of the simplest businesses in crypto: issue dollars, buy Treasuries, collect the spread.
+
+The simplicity is deceptive.
+
+The real business isn't earning yield. It's keeping liabilities from leaving. Distribution matters only because it shapes who can redeem, how coordinated those redeemers are, and how expensive switching becomes. Regulation has now added another layer by limiting how newcomers compete.
+
+In other words, reserve yield explains how much a stablecoin earns today. Holder topology, ecosystem embeddedness, and regulation explain whether it will still be earning that revenue tomorrow.
