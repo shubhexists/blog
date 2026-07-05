@@ -2,6 +2,9 @@
   "name": "shubh-blog",
   "license": "MIT",
   "description": "shubh.sh (blog)",
+  "engines": {
+    "node": "24.x"
+  },
   "dependencies": {
     "@fontsource/inter": "^4.5.15",
     "@fontsource/roboto-mono": "^4.5.10",
